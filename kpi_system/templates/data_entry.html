@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}إدخال البيانات{% endblock %}
+{% block page_title %}إدخال بيانات المؤشرات{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in">
+  <h2>
+    <div class="icon-box">✏️</div>
+    إدخال بيانات المؤشرات الشهرية
+  </h2>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 2fr;gap:20px;" class="animate-in-delay-1">
+
+  <!-- Left: Department + KPI Selection -->
+  <div>
+    <div class="card mb-3">
+      <div class="card-header">
+        <div class="card-icon" style="background:#dbeafe;color:#1e40af;">🏢</div>
+        <h5>اختر القسم</h5>
+      </div>
+      <div class="card-body">
+        <form method="GET" action="{{ url_for('data_entry') }}">
+          <div class="form-group">
+            <label class="form-label">القسم</label>
+            <select name="dept_id" class="form-select" onchange="this.form.submit()">
+              <option value="">-- اختر القسم --</option>
+              {% for dept in departments %}
+              <option value="{{ dept.id }}" {{ 'selected' if dept_id == dept.id|string }}>{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {% if kpis %}
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#d1fae5;color:#065f46;">📋</div>
+        <h5>مؤشرات القسم ({{ kpis|length }})</h5>
+      </div>
+      <div class="card-body" style="padding:8px;">
+        {% for kpi in kpis %}
+        <button onclick="selectKPI({{ kpi.id }}, '{{ kpi.name|replace("'","\\'")|truncate(60) }}', '{{ kpi.frequency }}', {{ kpi.target_value or 'null' }})"
+          class="kpi-select-btn" id="kpi-btn-{{ kpi.id }}"
+          style="display:block;width:100%;text-align:right;padding:10px 12px;margin-bottom:4px;background:#f8faff;border:1.5px solid #e2e8f0;border-radius:8px;cursor:pointer;font-family:Tajawal,sans-serif;font-size:13px;transition:all 0.2s;">
+          <div style="font-weight:600;color:#1a3c6e;margin-bottom:3px;">{{ kpi.name[:50] }}{% if kpi.name|length > 50 %}...{% endif %}</div>
+          <div style="display:flex;gap:6px;">
+            <span style="background:#ede9fe;color:#5b21b6;padding:2px 7px;border-radius:10px;font-size:10px;">{{ kpi.kpi_type }}</span>
+            <span style="background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:10px;font-size:10px;">{{ kpi.frequency }}</span>
+          </div>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: Data Entry Form -->
+  <div>
+    <div class="card" id="entryFormCard">
+      <div class="card-header">
+        <div class="card-icon" style="background:#fef3c7;color:#92400e;">📝</div>
+        <h5 id="formTitle">نموذج إدخال البيانات</h5>
+      </div>
+      <div class="card-body">
+        <div id="noKpiSelected" style="text-align:center;padding:40px;color:#94a3b8;">
+          <div style="font-size:48px;margin-bottom:12px;">👈</div>
+          <h4 style="color:#64748b;">اختر مؤشراً من القائمة</h4>
+          <p>اختر القسم ثم انقر على المؤشر لإدخال بياناته</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('data_entry') }}?dept_id={{ dept_id }}" id="dataEntryForm" style="display:none;">
+          <input type="hidden" name="kpi_id" id="kpiId">
+
+          <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:18px;" id="kpiInfoBox">
+            <div style="font-size:13px;font-weight:700;color:#0369a1;" id="kpiNameDisplay"></div>
+            <div style="display:flex;gap:8px;margin-top:6px;" id="kpiBadges"></div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">📅 السنة <span style="color:#ef4444;">*</span></label>
+              <select name="year" class="form-select" required>
+                {% for y in range(current_year - 2, current_year + 2) %}
+                <option value="{{ y }}" {{ 'selected' if y == current_year }}>{{ y }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group" id="monthGroup">
+              <label class="form-label">📆 الشهر</label>
+              <select name="month" class="form-select" id="monthSelect">
+                <option value="">-- اختر الشهر --</option>
+                <option value="1">يناير</option><option value="2">فبراير</option>
+                <option value="3">مارس</option><option value="4">أبريل</option>
+                <option value="5">مايو</option><option value="6">يونيو</option>
+                <option value="7">يوليو</option><option value="8">أغسطس</option>
+                <option value="9">سبتمبر</option><option value="10">أكتوبر</option>
+                <option value="11">نوفمبر</option><option value="12">ديسمبر</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="quarterGroup" style="display:none;">
+              <label class="form-label">🗓️ الربع</label>
+              <select name="quarter" class="form-select" id="quarterSelect">
+                <option value="">-- اختر الربع --</option>
+                <option value="1">الربع الأول (يناير - مارس)</option>
+                <option value="2">الربع الثاني (أبريل - يونيو)</option>
+                <option value="3">الربع الثالث (يوليو - سبتمبر)</option>
+                <option value="4">الربع الرابع (أكتوبر - ديسمبر)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">🔬 حجم العينة</label>
+              <input type="text" name="sample_size" class="form-control" placeholder="مثال: 50 أو كاملة">
+            </div>
+            <div class="form-group">
+              <label class="form-label">🎯 القيمة المستهدفة (%)</label>
+              <input type="number" name="target_value" id="targetInput" class="form-control"
+                placeholder="مثال: 100" min="0" max="100" step="0.1">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">📊 النتيجة الفعلية (%) <span style="color:#ef4444;">*</span></label>
+            <div style="position:relative;">
+              <input type="number" name="result_value" id="resultInput" class="form-control"
+                placeholder="أدخل النسبة المئوية..." min="0" max="100" step="0.1"
+                oninput="updateStatusPreview()" required>
+              <div id="statusPreview" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;"></div>
+            </div>
+          </div>
+
+          <!-- Visual progress bar -->
+          <div id="progressPreview" style="margin-bottom:16px;display:none;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:4px;">
+              <span>النتيجة الفعلية</span>
+              <span id="progressLabel">0%</span>
+            </div>
+            <div class="progress" style="height:12px;">
+              <div id="progressBar" class="progress-bar blue" style="width:0%;transition:width 0.5s;"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">🔍 تحليل النتائج</label>
+            <textarea name="analysis" class="form-control" rows="3"
+              placeholder="أدخل تحليلاً للنتيجة..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">🔧 الإجراء التصحيحي</label>
+            <textarea name="corrective_action" class="form-control" rows="3"
+              placeholder="في حال عدم التحقيق، أدخل الإجراء التصحيحي المقترح..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">📝 ملاحظات</label>
+            <textarea name="notes" class="form-control" rows="2" placeholder="أي ملاحظات إضافية..."></textarea>
+          </div>
+
+          <div style="display:flex;gap:12px;">
+            <button type="submit" class="btn btn-success btn-lg">
+              💾 حفظ البيانات
+            </button>
+            <button type="reset" class="btn btn-light btn-lg" onclick="resetForm()">
+              ↺ مسح
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentFreq = '';
+let currentTarget = null;
+
+function selectKPI(id, name, freq, target) {
+  // Update active button
+  document.querySelectorAll('.kpi-select-btn').forEach(b => {
+    b.style.background = '#f8faff';
+    b.style.borderColor = '#e2e8f0';
+  });
+  const btn = document.getElementById('kpi-btn-' + id);
+  if (btn) {
+    btn.style.background = '#eff6ff';
+    btn.style.borderColor = '#2563a8';
+  }
+
+  document.getElementById('kpiId').value = id;
+  document.getElementById('kpiNameDisplay').textContent = name;
+  document.getElementById('formTitle').textContent = 'إدخال بيانات: ' + name.substring(0, 40) + '...';
+
+  // Set target
+  currentTarget = target;
+  if (target !== null) {
+    document.getElementById('targetInput').value = target;
+  }
+
+  // Set frequency fields
+  currentFreq = freq;
+  const monthGroup = document.getElementById('monthGroup');
+  const quarterGroup = document.getElementById('quarterGroup');
+
+  if (freq === 'شهري') {
+    monthGroup.style.display = 'block';
+    quarterGroup.style.display = 'none';
+    document.getElementById('quarterSelect').value = '';
+  } else if (freq === 'ربع سنوي') {
+    monthGroup.style.display = 'none';
+    quarterGroup.style.display = 'block';
+    document.getElementById('monthSelect').value = '';
+  } else if (freq === 'نصف سنوي') {
+    monthGroup.style.display = 'none';
+    quarterGroup.style.display = 'block';
+    document.getElementById('quarterSelect').innerHTML = `
+      <option value="">-- اختر النصف --</option>
+      <option value="1">النصف الأول (يناير - يونيو)</option>
+      <option value="3">النصف الثاني (يوليو - ديسمبر)</option>
+    `;
+    document.getElementById('monthSelect').value = '';
+  } else {
+    monthGroup.style.display = 'none';
+    quarterGroup.style.display = 'none';
+  }
+
+  // Badges
+  const badges = document.getElementById('kpiBadges');
+  badges.innerHTML = `
+    <span style="background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;">${freq}</span>
+    ${target !== null ? `<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;">المستهدف: ${target}%</span>` : ''}
+  `;
+
+  document.getElementById('noKpiSelected').style.display = 'none';
+  document.getElementById('dataEntryForm').style.display = 'block';
+}
+
+function updateStatusPreview() {
+  const result = parseFloat(document.getElementById('resultInput').value);
+  const target = parseFloat(document.getElementById('targetInput').value) || currentTarget;
+  const preview = document.getElementById('statusPreview');
+  const progressDiv = document.getElementById('progressPreview');
+  const bar = document.getElementById('progressBar');
+  const label = document.getElementById('progressLabel');
+
+  if (!isNaN(result)) {
+    progressDiv.style.display = 'block';
+    const pct = Math.min(result, 100);
+    bar.style.width = pct + '%';
+    label.textContent = result + '%';
+
+    if (target !== null && !isNaN(target)) {
+      if (target === 0) {
+        preview.textContent = result === 0 ? '✅ محقق' : '❌ غير محقق';
+        preview.style.color = result === 0 ? '#10b981' : '#ef4444';
+        bar.className = 'progress-bar ' + (result === 0 ? 'green' : 'red');
+      } else {
+        const achieved = result >= target;
+        preview.textContent = achieved ? '✅ محقق' : '❌ غير محقق';
+        preview.style.color = achieved ? '#10b981' : '#ef4444';
+        bar.className = 'progress-bar ' + (achieved ? 'green' : 'red');
+      }
+    }
+  } else {
+    progressDiv.style.display = 'none';
+    preview.textContent = '';
+  }
+}
+
+function resetForm() {
+  document.getElementById('statusPreview').textContent = '';
+  document.getElementById('progressPreview').style.display = 'none';
+}
+</script>
+{% endblock %}

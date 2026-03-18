@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ 'تعديل مستخدم' if action == 'edit' else 'إضافة مستخدم' }}{% endblock %}
+{% block page_title %}{{ 'تعديل مستخدم' if action == 'edit' else 'إضافة مستخدم جديد' }}{% endblock %}
+
+{% block content %}
+<div style="max-width:600px;" class="animate-in">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#d1fae5;color:#065f46;">👤</div>
+      <h5>{{ 'تعديل بيانات المستخدم' if action == 'edit' else 'إضافة مستخدم جديد' }}</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('user_edit', user_id=user.id) if action == 'edit' else url_for('user_add') }}">
+
+        <div class="form-group">
+          <label class="form-label">👤 الاسم الكامل <span style="color:#ef4444;">*</span></label>
+          <input type="text" name="full_name" class="form-control" required value="{{ user.full_name if user else '' }}" placeholder="الاسم الكامل">
+        </div>
+
+        {% if action == 'add' %}
+        <div class="form-group">
+          <label class="form-label">🔑 اسم المستخدم <span style="color:#ef4444;">*</span></label>
+          <input type="text" name="username" class="form-control" required placeholder="اسم المستخدم (بالإنجليزية)">
+        </div>
+        {% endif %}
+
+        <div class="form-group">
+          <label class="form-label">🔒 كلمة المرور {{ '(اتركها فارغة للإبقاء على الحالية)' if action == 'edit' else '' }}</label>
+          <input type="password" name="password" class="form-control" {{ 'required' if action == 'add' }} placeholder="كلمة المرور">
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">🏅 الدور <span style="color:#ef4444;">*</span></label>
+            <select name="role" class="form-select" required>
+              <option value="admin" {{ 'selected' if user and user.role == 'admin' }}>👑 مدير النظام</option>
+              <option value="quality" {{ 'selected' if user and user.role == 'quality' }}>🏅 قسم الجودة</option>
+              <option value="head" {{ 'selected' if user and user.role == 'head' }}>🏢 رئيس قسم</option>
+              <option value="staff" {{ 'selected' if user and user.role == 'staff' }}>✏️ موظف إدخال</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">🏢 القسم</label>
+            <select name="department_id" class="form-select">
+              <option value="">-- اختر القسم --</option>
+              {% for dept in departments %}
+              <option value="{{ dept.id }}" {{ 'selected' if user and user.department_id == dept.id }}>{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button type="submit" class="btn btn-primary btn-lg">💾 حفظ</button>
+          <a href="{{ url_for('user_list') }}" class="btn btn-light btn-lg">إلغاء</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

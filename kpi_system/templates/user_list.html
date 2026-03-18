@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}إدارة المستخدمين{% endblock %}
+{% block page_title %}إدارة المستخدمين{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in">
+  <h2><div class="icon-box">👥</div> إدارة المستخدمين</h2>
+  <a href="{{ url_for('user_add') }}" class="btn btn-primary">➕ إضافة مستخدم</a>
+</div>
+
+<div class="card animate-in">
+  <div class="card-header">
+    <div class="card-icon" style="background:#dbeafe;color:#1e40af;">👥</div>
+    <h5>قائمة المستخدمين ({{ users|length }})</h5>
+  </div>
+  <div class="table-container">
+    <table class="table">
+      <thead>
+        <tr><th>#</th><th>الاسم الكامل</th><th>اسم المستخدم</th><th>الدور</th><th>القسم</th><th>الإجراءات</th></tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td style="color:#94a3b8;">{{ loop.index }}</td>
+          <td><strong>{{ user.full_name }}</strong></td>
+          <td><code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;">{{ user.username }}</code></td>
+          <td>
+            {% set role_styles = {'admin':'#ede9fe:#5b21b6', 'quality':'#dbeafe:#1e40af', 'head':'#d1fae5:#065f46', 'staff':'#fef3c7:#92400e'} %}
+            {% set rs = role_styles.get(user.role, '#f1f5f9:#475569').split(':') %}
+            <span style="background:{{ rs[0] }};color:{{ rs[1] }};padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;">
+              {{ user.role_name() }}
+            </span>
+          </td>
+          <td>{{ user.department.name if user.department else '—' }}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{{ url_for('user_edit', user_id=user.id) }}" class="btn btn-warning btn-sm btn-icon" data-tooltip="تعديل">✏</a>
+              {% if user.id != current_user.id %}
+              <button class="btn btn-danger btn-sm btn-icon" data-tooltip="حذف"
+                onclick="confirmDelete('{{ url_for('user_delete', user_id=user.id) }}', 'حذف المستخدم: {{ user.full_name }}؟')">🗑️</button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

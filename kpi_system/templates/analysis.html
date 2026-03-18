@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}التحليل والمقارنة{% endblock %}
+{% block page_title %}تحليل الأداء والمقارنة{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in">
+  <h2>
+    <div class="icon-box">📈</div>
+    تحليل الأداء والمقارنة
+  </h2>
+  <form method="GET" action="{{ url_for('analysis') }}" style="display:flex;gap:10px;align-items:center;">
+    <label style="font-weight:700;color:#1a3c6e;">📅 السنة:</label>
+    <select name="year" class="form-select" style="width:120px;" onchange="this.form.submit()">
+      {% for y in years %}
+      <option value="{{ y }}" {{ 'selected' if y == year }}>{{ y }}</option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+
+<!-- Dept Performance Table -->
+<div class="card mb-4 animate-in">
+  <div class="card-header">
+    <div class="card-icon" style="background:#ede9fe;color:#5b21b6;">🏢</div>
+    <h5>أداء الأقسام - {{ year }}</h5>
+  </div>
+  <div class="table-container">
+    {% if dept_performance_list %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>القسم</th>
+          <th>إجمالي النتائج</th>
+          <th>محقق</th>
+          <th>غير محقق</th>
+          <th>نسبة التحقيق</th>
+          <th>شريط الأداء</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dept in dept_performance_list %}
+        <tr>
+          <td><strong>{{ dept.name }}</strong></td>
+          <td><span class="badge badge-secondary">{{ dept.total }}</span></td>
+          <td><span class="badge badge-success">{{ dept.achieved }} ✓</span></td>
+          <td><span class="badge badge-danger">{{ dept.not_achieved }} ✗</span></td>
+          <td>
+            <strong style="color:{{ '#10b981' if dept.pct >= 80 else ('#f59e0b' if dept.pct >= 60 else '#ef4444') }};font-size:16px;">
+              {{ dept.pct }}%
+            </strong>
+          </td>
+          <td style="width:200px;">
+            <div class="progress">
+              <div class="progress-bar {{ 'green' if dept.pct >= 80 else ('amber' if dept.pct >= 60 else 'red') }}"
+                style="width:{{ dept.pct }}%;"></div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📊</div>
+      <h4>لا توجد بيانات لهذه السنة</h4>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" class="animate-in-delay-1">
+
+  <!-- Monthly Trend -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#dbeafe;color:#1e40af;">📈</div>
+      <h5>الاتجاه الشهري - {{ year }}</h5>
+    </div>
+    <div class="card-body">
+      <div style="height:260px;">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quarterly Comparison -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#d1fae5;color:#065f46;">📊</div>
+      <h5>المقارنة الربع سنوية - {{ year }}</h5>
+    </div>
+    <div class="card-body">
+      <div style="height:260px;">
+        <canvas id="quarterlyChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Department Bar Chart -->
+<div class="card animate-in-delay-2">
+  <div class="card-header">
+    <div class="card-icon" style="background:#fef3c7;color:#92400e;">🏢</div>
+    <h5>مقارنة أداء الأقسام - {{ year }}</h5>
+  </div>
+  <div class="card-body">
+    <div style="height:300px;">
+      <canvas id="deptChart"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const monthlyData = {{ monthly|safe }};
+const quarterlyData = {{ quarterly|safe }};
+const deptData = {{ dept_performance|safe }};
+
+// Monthly Chart
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'line',
+  data: {
+    labels: monthlyData.map(d => d.month),
+    datasets: [{
+      label: 'نسبة التحقيق %',
+      data: monthlyData.map(d => d.pct),
+      borderColor: '#2563a8',
+      backgroundColor: 'rgba(37,99,168,0.1)',
+      borderWidth: 2.5,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: monthlyData.map(d => d.pct >= 80 ? '#10b981' : '#ef4444'),
+      pointRadius: 5
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// Quarterly Chart
+new Chart(document.getElementById('quarterlyChart'), {
+  type: 'bar',
+  data: {
+    labels: quarterlyData.map(d => 'الربع ' + d.quarter),
+    datasets: [
+      {
+        label: 'محقق',
+        data: quarterlyData.map(d => d.achieved),
+        backgroundColor: 'rgba(16,185,129,0.8)',
+        borderRadius: 6
+      },
+      {
+        label: 'غير محقق',
+        data: quarterlyData.map(d => d.total - d.achieved),
+        backgroundColor: 'rgba(239,68,68,0.8)',
+        borderRadius: 6
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      x: { stacked: true, grid: { display: false } },
+      y: { stacked: true }
+    }
+  }
+});
+
+// Department Chart
+new Chart(document.getElementById('deptChart'), {
+  type: 'bar',
+  data: {
+    labels: deptData.map(d => d.name.length > 20 ? d.name.substring(0,20)+'...' : d.name),
+    datasets: [{
+      label: 'نسبة التحقيق %',
+      data: deptData.map(d => d.pct),
+      backgroundColor: deptData.map(d => d.pct >= 80 ? 'rgba(16,185,129,0.8)' : (d.pct >= 60 ? 'rgba(245,158,11,0.8)' : 'rgba(239,68,68,0.8)')),
+      borderRadius: 6,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}نظام مؤشرات الأداء{% endblock %} | المركز الصحي الأولي</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* Fallback font stack for offline */
+    @font-face {
+      font-family: 'Tajawal';
+      src: local('Tajawal'), local('Arial');
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">🏥</div>
+    <div class="brand-text">
+      <h5>المركز الصحي الأولي</h5>
+      <small>نظام إدارة مؤشرات الأداء</small>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-title">الرئيسية</div>
+    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">
+      <span class="nav-icon">📊</span>
+      <span>لوحة التحكم</span>
+    </a>
+
+    <div class="nav-section-title">إدارة المؤشرات</div>
+    <a href="{{ url_for('kpi_list') }}" class="{{ 'active' if request.endpoint in ['kpi_list','kpi_add','kpi_edit','kpi_detail'] }}">
+      <span class="nav-icon">📋</span>
+      <span>قائمة المؤشرات</span>
+    </a>
+    <a href="{{ url_for('data_entry') }}" class="{{ 'active' if request.endpoint == 'data_entry' }}">
+      <span class="nav-icon">✏️</span>
+      <span>إدخال البيانات</span>
+    </a>
+
+    <div class="nav-section-title">التحليل والتقارير</div>
+    <a href="{{ url_for('analysis') }}" class="{{ 'active' if request.endpoint == 'analysis' }}">
+      <span class="nav-icon">📈</span>
+      <span>التحليل والمقارنة</span>
+    </a>
+    <a href="{{ url_for('reports') }}" class="{{ 'active' if request.endpoint == 'reports' }}">
+      <span class="nav-icon">📄</span>
+      <span>التقارير</span>
+    </a>
+
+    {% if current_user.role in ['admin', 'quality'] %}
+    <div class="nav-section-title">الإدارة</div>
+    <a href="{{ url_for('dept_list') }}" class="{{ 'active' if request.endpoint in ['dept_list'] }}">
+      <span class="nav-icon">🏢</span>
+      <span>الأقسام</span>
+    </a>
+    {% endif %}
+
+    {% if current_user.role == 'admin' %}
+    <a href="{{ url_for('user_list') }}" class="{{ 'active' if request.endpoint in ['user_list','user_add','user_edit'] }}">
+      <span class="nav-icon">👥</span>
+      <span>المستخدمون</span>
+    </a>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="user-avatar">{{ current_user.full_name[0] if current_user.full_name else 'م' }}</div>
+    <div class="user-info">
+      <strong>{{ current_user.full_name }}</strong>
+      <small>{{ current_user.role_name() }}</small>
+    </div>
+    <a href="{{ url_for('logout') }}" class="header-btn" data-tooltip="تسجيل الخروج" style="margin-right:auto;background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff;">🚪</a>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main-content">
+  <!-- Top Header -->
+  <header class="top-header">
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="page-title">{% block page_title %}{% endblock %}</div>
+    <div class="header-actions">
+      <span class="date-badge" id="currentDate">📅 جاري التحميل...</span>
+      {% if current_user.role in ['admin','quality'] %}
+      <a href="{{ url_for('kpi_add') }}" class="header-btn" data-tooltip="إضافة مؤشر جديد">➕</a>
+      {% endif %}
+      <a href="{{ url_for('data_entry') }}" class="header-btn" data-tooltip="إدخال بيانات">✏️</a>
+    </div>
+  </header>
+
+  <!-- Flash Messages -->
+  <div style="padding: 0 24px; margin-top: 12px;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}" id="flash-{{ loop.index }}">
+          <span>{{ '✅' if category == 'success' else ('❌' if category == 'danger' else '⚠️') }}</span>
+          {{ message }}
+          <button onclick="this.parentElement.remove()" style="margin-right:auto;background:none;border:none;cursor:pointer;font-size:16px;color:inherit;">×</button>
+        </div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+
+  <!-- Page Content -->
+  <div class="page-content">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h5>⚠️ تأكيد الحذف</h5>
+      <button class="modal-close" onclick="closeModal('confirmModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMessage">هل أنت متأكد من الحذف؟</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('confirmModal')">إلغاء</button>
+      <button class="btn btn-danger" id="confirmBtn">حذف</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Date display
+function updateDate() {
+  const now = new Date();
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById('currentDate').textContent = '📅 ' + now.toLocaleDateString('ar-SA', options);
+}
+updateDate();
+
+// Auto-dismiss flash messages
+setTimeout(() => {
+  document.querySelectorAll('.alert').forEach(el => {
+    el.style.transition = 'opacity 0.5s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 500);
+  });
+}, 4000);
+
+// Sidebar toggle
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// Modal functions
+function openModal(id) {
+  document.getElementById(id).classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+function confirmDelete(url, message) {
+  document.getElementById('confirmMessage').textContent = message || 'هل أنت متأكد من الحذف؟';
+  document.getElementById('confirmBtn').onclick = function() {
+    fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) { location.reload(); }
+        else { alert(data.error || 'حدث خطأ'); }
+      });
+    closeModal('confirmModal');
+  };
+  openModal('confirmModal');
+}
+
+// Chart.js defaults for Arabic RTL
+Chart.defaults.font.family = "'Tajawal', 'Arial', sans-serif";
+Chart.defaults.font.size = 13;
+Chart.defaults.plugins.legend.rtl = true;
+Chart.defaults.plugins.legend.textDirection = 'rtl';
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

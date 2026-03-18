@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}قائمة المؤشرات{% endblock %}
+{% block page_title %}إدارة مؤشرات الأداء{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in">
+  <h2>
+    <div class="icon-box">📋</div>
+    مؤشرات الأداء الرئيسية
+  </h2>
+  {% if current_user.role in ['admin','quality'] %}
+  <a href="{{ url_for('kpi_add') }}" class="btn btn-primary">
+    ➕ إضافة مؤشر جديد
+  </a>
+  {% endif %}
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar animate-in-delay-1">
+  <form method="GET" action="{{ url_for('kpi_list') }}" style="display:contents;">
+    <div class="form-group">
+      <label class="form-label">🔍 بحث</label>
+      <input type="text" name="search" class="form-control" placeholder="ابحث عن مؤشر..." value="{{ search }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">🏢 القسم</label>
+      <select name="dept" class="form-select">
+        <option value="">جميع الأقسام</option>
+        {% for dept in departments %}
+        <option value="{{ dept.id }}" {{ 'selected' if dept_filter == dept.id|string }}>{{ dept.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">🏷️ النوع</label>
+      <select name="type" class="form-select">
+        <option value="">جميع الأنواع</option>
+        <option value="بنية" {{ 'selected' if type_filter == 'بنية' }}>بنية</option>
+        <option value="عمليات" {{ 'selected' if type_filter == 'عمليات' }}>عمليات</option>
+        <option value="نتائج" {{ 'selected' if type_filter == 'نتائج' }}>نتائج</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">📅 التكرار</label>
+      <select name="freq" class="form-select">
+        <option value="">جميع الترددات</option>
+        <option value="شهري" {{ 'selected' if freq_filter == 'شهري' }}>شهري</option>
+        <option value="ربع سنوي" {{ 'selected' if freq_filter == 'ربع سنوي' }}>ربع سنوي</option>
+        <option value="نصف سنوي" {{ 'selected' if freq_filter == 'نصف سنوي' }}>نصف سنوي</option>
+        <option value="سنوي" {{ 'selected' if freq_filter == 'سنوي' }}>سنوي</option>
+      </select>
+    </div>
+    <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">
+      <button type="submit" class="btn btn-primary">🔍 بحث</button>
+      <a href="{{ url_for('kpi_list') }}" class="btn btn-light">↺ إعادة</a>
+    </div>
+  </form>
+</div>
+
+<!-- Stats Row -->
+<div class="grid-4 mb-4 animate-in-delay-1">
+  <div style="background:#fff;border-radius:10px;padding:14px 18px;border:1px solid #e8edf2;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+    <div style="font-size:24px;font-weight:800;color:#1a3c6e;">{{ kpis|length }}</div>
+    <div style="font-size:12px;color:#64748b;">إجمالي المؤشرات</div>
+  </div>
+  <div style="background:#fff;border-radius:10px;padding:14px 18px;border:1px solid #e8edf2;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+    <div style="font-size:24px;font-weight:800;color:#6366f1;">{{ kpis|selectattr('kpi_type','equalto','بنية')|list|length + kpis|selectattr('kpi_type','equalto','مؤشر بنية')|list|length }}</div>
+    <div style="font-size:12px;color:#64748b;">مؤشرات بنية</div>
+  </div>
+  <div style="background:#fff;border-radius:10px;padding:14px 18px;border:1px solid #e8edf2;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+    <div style="font-size:24px;font-weight:800;color:#3b82f6;">{{ kpis|selectattr('kpi_type','equalto','عمليات')|list|length }}</div>
+    <div style="font-size:12px;color:#64748b;">مؤشرات عمليات</div>
+  </div>
+  <div style="background:#fff;border-radius:10px;padding:14px 18px;border:1px solid #e8edf2;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+    <div style="font-size:24px;font-weight:800;color:#10b981;">{{ kpis|selectattr('kpi_type','in',['نتائج','مخرجات'])|list|length }}</div>
+    <div style="font-size:12px;color:#64748b;">مؤشرات نتائج</div>
+  </div>
+</div>
+
+<!-- KPI Table -->
+<div class="card animate-in-delay-2">
+  <div class="card-header">
+    <div class="card-icon" style="background:#dbeafe;color:#1e40af;">📋</div>
+    <h5>قائمة المؤشرات ({{ kpis|length }})</h5>
+    {% if current_user.role in ['admin','quality'] %}
+    <a href="{{ url_for('kpi_add') }}" class="btn btn-primary btn-sm" style="margin-right:auto;">➕ إضافة</a>
+    {% endif %}
+  </div>
+  <div class="table-container">
+    {% if kpis %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>اسم المؤشر</th>
+          <th>القسم</th>
+          <th>النوع</th>
+          <th>المستهدف</th>
+          <th>التكرار</th>
+          <th>المسؤول</th>
+          <th>الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for kpi in kpis %}
+        <tr>
+          <td style="color:#94a3b8;font-size:12px;">{{ loop.index }}</td>
+          <td>
+            <a href="{{ url_for('kpi_detail', kpi_id=kpi.id) }}" style="color:#1a3c6e;font-weight:600;text-decoration:none;">
+              {{ kpi.name[:55] }}{% if kpi.name|length > 55 %}...{% endif %}
+            </a>
+          </td>
+          <td>
+            {% if kpi.department %}
+            <span class="badge badge-secondary">{{ kpi.department.name[:20] }}</span>
+            {% else %}
+            <span style="color:#94a3b8;font-size:12px;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% set type_map = {'بنية': ('structure','#ede9fe','#5b21b6'), 'مؤشر بنية': ('structure','#ede9fe','#5b21b6'), 'عمليات': ('process','#dbeafe','#1e40af'), 'نتائج': ('outcome','#d1fae5','#065f46'), 'مخرجات': ('outcome','#d1fae5','#065f46')} %}
+            {% set tc = type_map.get(kpi.kpi_type, ('','#f1f5f9','#475569')) %}
+            <span style="background:{{ tc[1] }};color:{{ tc[2] }};padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;">
+              {{ kpi.kpi_type }}
+            </span>
+          </td>
+          <td>
+            {% if kpi.target_value is not none %}
+            <span style="font-weight:700;color:#1a3c6e;">{{ kpi.target_value }}%</span>
+            {% else %}
+            <span style="color:#94a3b8;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% set freq_colors = {'شهري': '#d1fae5:#065f46', 'ربع سنوي': '#dbeafe:#1e40af', 'نصف سنوي': '#fef3c7:#92400e', 'سنوي': '#fee2e2:#991b1b'} %}
+            <span class="badge badge-info">{{ kpi.frequency }}</span>
+          </td>
+          <td style="font-size:13px;color:#475569;">{{ kpi.responsible_person or '—' }}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{{ url_for('kpi_detail', kpi_id=kpi.id) }}" class="btn btn-light btn-sm btn-icon" data-tooltip="عرض التفاصيل">👁️</a>
+              <a href="{{ url_for('data_entry') }}?kpi={{ kpi.id }}" class="btn btn-primary btn-sm btn-icon" data-tooltip="إدخال بيانات">✏️</a>
+              {% if current_user.role in ['admin','quality'] %}
+              <a href="{{ url_for('kpi_edit', kpi_id=kpi.id) }}" class="btn btn-warning btn-sm btn-icon" data-tooltip="تعديل">✏</a>
+              {% endif %}
+              {% if current_user.role == 'admin' %}
+              <button class="btn btn-danger btn-sm btn-icon" data-tooltip="حذف"
+                onclick="confirmDelete('{{ url_for('kpi_delete', kpi_id=kpi.id) }}', 'هل تريد حذف مؤشر: {{ kpi.name[:40] }}؟')">🗑️</button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <h4>لا توجد مؤشرات</h4>
+      <p>لم يتم العثور على مؤشرات تطابق معايير البحث</p>
+      {% if current_user.role in ['admin','quality'] %}
+      <a href="{{ url_for('kpi_add') }}" class="btn btn-primary mt-2">➕ إضافة مؤشر جديد</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

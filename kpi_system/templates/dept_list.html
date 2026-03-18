@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}إدارة الأقسام{% endblock %}
+{% block page_title %}إدارة الأقسام{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in">
+  <h2><div class="icon-box">🏢</div> إدارة الأقسام</h2>
+  <button class="btn btn-primary" onclick="openModal('addDeptModal')">➕ إضافة قسم</button>
+</div>
+
+<div class="card animate-in">
+  <div class="card-header">
+    <div class="card-icon" style="background:#ede9fe;color:#5b21b6;">🏢</div>
+    <h5>الأقسام النشطة ({{ departments|length }})</h5>
+  </div>
+  <div class="table-container">
+    <table class="table">
+      <thead>
+        <tr><th>#</th><th>اسم القسم</th><th>الوصف</th><th>عدد المؤشرات</th><th>الإجراءات</th></tr>
+      </thead>
+      <tbody>
+        {% for dept in departments %}
+        <tr>
+          <td style="color:#94a3b8;">{{ loop.index }}</td>
+          <td><strong style="color:#1a3c6e;">{{ dept.name }}</strong></td>
+          <td style="color:#64748b;font-size:13px;">{{ dept.description or '—' }}</td>
+          <td>
+            <span class="badge badge-info">{{ dept.kpis|selectattr('is_active')|list|length }} مؤشر</span>
+          </td>
+          <td>
+            {% if current_user.role == 'admin' %}
+            <button class="btn btn-danger btn-sm btn-icon" data-tooltip="حذف"
+              onclick="confirmDelete('{{ url_for('dept_delete', dept_id=dept.id) }}', 'حذف قسم: {{ dept.name }}؟')">🗑️</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Dept Modal -->
+<div class="modal-overlay" id="addDeptModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h5>➕ إضافة قسم جديد</h5>
+      <button class="modal-close" onclick="closeModal('addDeptModal')">×</button>
+    </div>
+    <form method="POST" action="{{ url_for('dept_add') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">🏢 اسم القسم <span style="color:#ef4444;">*</span></label>
+          <input type="text" name="name" class="form-control" required placeholder="أدخل اسم القسم">
+        </div>
+        <div class="form-group">
+          <label class="form-label">📝 الوصف</label>
+          <textarea name="description" class="form-control" rows="2" placeholder="وصف مختصر للقسم..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" onclick="closeModal('addDeptModal')">إلغاء</button>
+        <button type="submit" class="btn btn-primary">➕ إضافة</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

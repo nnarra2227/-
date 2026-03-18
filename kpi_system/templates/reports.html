@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}التقارير{% endblock %}
+{% block page_title %}إنشاء التقارير{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in">
+  <h2>
+    <div class="icon-box">📄</div>
+    التقارير وتصدير البيانات
+  </h2>
+</div>
+
+<div class="grid-3 mb-4 animate-in">
+  <!-- Monthly Report Card -->
+  <div class="card" style="border-top:4px solid #2563a8;">
+    <div class="card-body" style="text-align:center;padding:28px;">
+      <div style="font-size:52px;margin-bottom:12px;">📅</div>
+      <h4 style="color:#1a3c6e;font-size:17px;margin-bottom:8px;">التقرير الشهري</h4>
+      <p style="color:#64748b;font-size:13px;margin-bottom:20px;">تقرير شامل لمؤشرات الأداء لشهر محدد مع جداول وتحليل</p>
+      <button class="btn btn-primary w-100" onclick="openReportModal('monthly')">
+        📄 إنشاء التقرير
+      </button>
+    </div>
+  </div>
+
+  <!-- Quarterly Report Card -->
+  <div class="card" style="border-top:4px solid #10b981;">
+    <div class="card-body" style="text-align:center;padding:28px;">
+      <div style="font-size:52px;margin-bottom:12px;">📊</div>
+      <h4 style="color:#1a3c6e;font-size:17px;margin-bottom:8px;">التقرير الربع سنوي</h4>
+      <p style="color:#64748b;font-size:13px;margin-bottom:20px;">مقارنة ربع سنوية للمؤشرات مع تحليل الاتجاهات</p>
+      <button class="btn btn-success w-100" onclick="openReportModal('quarterly')">
+        📊 إنشاء التقرير
+      </button>
+    </div>
+  </div>
+
+  <!-- Department Report Card -->
+  <div class="card" style="border-top:4px solid #f59e0b;">
+    <div class="card-body" style="text-align:center;padding:28px;">
+      <div style="font-size:52px;margin-bottom:12px;">🏢</div>
+      <h4 style="color:#1a3c6e;font-size:17px;margin-bottom:8px;">تقرير القسم</h4>
+      <p style="color:#64748b;font-size:13px;margin-bottom:20px;">تقرير أداء قسم محدد مع جميع مؤشراته ونتائجه</p>
+      <button class="btn btn-warning w-100" onclick="openReportModal('department')">
+        🏢 إنشاء التقرير
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Annual Report -->
+<div class="card animate-in-delay-1">
+  <div class="card-header">
+    <div class="card-icon" style="background:#fee2e2;color:#991b1b;">📋</div>
+    <h5>التقرير السنوي الشامل</h5>
+  </div>
+  <div class="card-body">
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="flex:1;">
+        <p style="color:#475569;font-size:14px;">يتضمن التقرير السنوي جميع مؤشرات الأداء لعام كامل مع مقارنة الأرباع والتحليل الشامل.</p>
+      </div>
+      <form method="POST" action="{{ url_for('generate_report') }}" style="display:flex;gap:10px;align-items:center;">
+        <input type="hidden" name="report_type" value="annual">
+        <select name="year" class="form-select" style="width:120px;">
+          {% for y in years %}
+          <option value="{{ y }}" {{ 'selected' if y == current_year }}>{{ y }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-danger">
+          📥 تحميل PDF
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div class="modal-overlay" id="reportModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h5 id="reportModalTitle">⚙️ إعدادات التقرير</h5>
+      <button class="modal-close" onclick="closeModal('reportModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="{{ url_for('generate_report') }}" id="reportForm">
+        <input type="hidden" name="report_type" id="reportType">
+
+        <div class="form-group">
+          <label class="form-label">📅 السنة</label>
+          <select name="year" class="form-select">
+            {% for y in years %}
+            <option value="{{ y }}" {{ 'selected' if y == current_year }}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group" id="monthField" style="display:none;">
+          <label class="form-label">📆 الشهر</label>
+          <select name="month" class="form-select">
+            <option value="1">يناير</option><option value="2">فبراير</option>
+            <option value="3">مارس</option><option value="4">أبريل</option>
+            <option value="5">مايو</option><option value="6">يونيو</option>
+            <option value="7">يوليو</option><option value="8">أغسطس</option>
+            <option value="9">سبتمبر</option><option value="10">أكتوبر</option>
+            <option value="11">نوفمبر</option><option value="12">ديسمبر</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="quarterField" style="display:none;">
+          <label class="form-label">🗓️ الربع</label>
+          <select name="quarter" class="form-select">
+            <option value="1">الربع الأول</option>
+            <option value="2">الربع الثاني</option>
+            <option value="3">الربع الثالث</option>
+            <option value="4">الربع الرابع</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="deptField" style="display:none;">
+          <label class="form-label">🏢 القسم</label>
+          <select name="dept_id" class="form-select">
+            {% for dept in departments %}
+            <option value="{{ dept.id }}">{{ dept.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('reportModal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="document.getElementById('reportForm').submit();">
+        📥 إنشاء وتحميل PDF
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openReportModal(type) {
+  document.getElementById('reportType').value = type;
+
+  const titles = {
+    'monthly': '📅 التقرير الشهري',
+    'quarterly': '📊 التقرير الربع سنوي',
+    'department': '🏢 تقرير القسم'
+  };
+  document.getElementById('reportModalTitle').textContent = titles[type] || 'إنشاء تقرير';
+
+  document.getElementById('monthField').style.display = type === 'monthly' ? 'block' : 'none';
+  document.getElementById('quarterField').style.display = type === 'quarterly' ? 'block' : 'none';
+  document.getElementById('deptField').style.display = type === 'department' ? 'block' : 'none';
+
+  openModal('reportModal');
+}
+</script>
+{% endblock %}

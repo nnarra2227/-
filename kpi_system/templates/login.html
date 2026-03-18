@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول | نظام مؤشرات الأداء</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .particles { position: absolute; inset: 0; overflow: hidden; }
+    .particle {
+      position: absolute;
+      width: 4px; height: 4px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 50%;
+      animation: float linear infinite;
+    }
+    @keyframes float {
+      0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100px) rotate(720deg); opacity: 0; }
+    }
+    .login-features {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .feature-tag {
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.8);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .input-icon-wrap {
+      position: relative;
+    }
+    .input-icon-wrap .icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      pointer-events: none;
+    }
+    .input-icon-wrap .form-control {
+      padding-right: 40px;
+    }
+    .login-divider {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 12px;
+      margin: 16px 0;
+      position: relative;
+    }
+    .login-divider::before, .login-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 40%;
+      height: 1px;
+      background: #e2e8f0;
+    }
+    .login-divider::before { right: 0; }
+    .login-divider::after { left: 0; }
+    .demo-accounts {
+      background: #f8faff;
+      border-radius: 10px;
+      padding: 14px;
+      border: 1px solid #e2e8f0;
+    }
+    .demo-accounts h6 {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .demo-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Tajawal', sans-serif;
+      font-size: 12px;
+      width: 100%;
+      margin-bottom: 6px;
+      transition: all 0.2s;
+      text-align: right;
+    }
+    .demo-btn:hover { background: #eff6ff; border-color: #bfdbfe; }
+    .demo-btn:last-child { margin-bottom: 0; }
+    .demo-btn .role-badge {
+      margin-right: auto;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+<div class="login-page">
+  <div class="particles" id="particles"></div>
+
+  <div style="position:relative;z-index:1;width:100%;max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;">
+
+    <!-- Left side info -->
+    <div style="color:#fff;padding:20px;">
+      <div style="font-size:64px;margin-bottom:20px;">🏥</div>
+      <h1 style="font-size:28px;font-weight:800;margin-bottom:12px;line-height:1.3;">
+        نظام إدارة<br>مؤشرات الأداء
+      </h1>
+      <p style="font-size:15px;opacity:0.8;line-height:1.8;margin-bottom:24px;">
+        منصة متكاملة لإدارة ومتابعة مؤشرات أداء المركز الصحي الأولي، مع لوحة تحكم تفاعلية وتقارير شاملة.
+      </p>
+      <div class="login-features">
+        <span class="feature-tag">📊 لوحة تحكم تفاعلية</span>
+        <span class="feature-tag">📈 تحليل الأداء</span>
+        <span class="feature-tag">📄 تقارير PDF</span>
+        <span class="feature-tag">🏢 إدارة الأقسام</span>
+        <span class="feature-tag">👥 إدارة المستخدمين</span>
+        <span class="feature-tag">🔒 نظام صلاحيات</span>
+      </div>
+    </div>
+
+    <!-- Login Card -->
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-circle">🏥</div>
+        <h3>تسجيل الدخول</h3>
+        <p>المركز الصحي الأولي</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <span>{{ '✅' if category == 'success' else '❌' }}</span>
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('login') }}">
+        <div class="form-group">
+          <label class="form-label">👤 اسم المستخدم</label>
+          <div class="input-icon-wrap">
+            <span class="icon">👤</span>
+            <input type="text" name="username" class="form-control" placeholder="أدخل اسم المستخدم" required autofocus>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">🔒 كلمة المرور</label>
+          <div class="input-icon-wrap">
+            <span class="icon">🔒</span>
+            <input type="password" name="password" id="passwordInput" class="form-control" placeholder="أدخل كلمة المرور" required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 btn-lg" style="margin-top:8px;">
+          🚀 تسجيل الدخول
+        </button>
+      </form>
+
+      <div class="login-divider">الحسابات التجريبية</div>
+
+      <div class="demo-accounts">
+        <h6>🔑 انقر للدخول السريع</h6>
+        <button class="demo-btn" onclick="fillLogin('admin','admin123')">
+          <span>👑</span>
+          <span>مدير النظام</span>
+          <span class="role-badge" style="background:#ede9fe;color:#5b21b6;">admin / admin123</span>
+        </button>
+        <button class="demo-btn" onclick="fillLogin('quality','quality123')">
+          <span>🏅</span>
+          <span>قسم الجودة</span>
+          <span class="role-badge" style="background:#dbeafe;color:#1e40af;">quality / quality123</span>
+        </button>
+        <button class="demo-btn" onclick="fillLogin('head','head123')">
+          <span>🏢</span>
+          <span>رئيس قسم</span>
+          <span class="role-badge" style="background:#d1fae5;color:#065f46;">head / head123</span>
+        </button>
+        <button class="demo-btn" onclick="fillLogin('staff','staff123')">
+          <span>✏️</span>
+          <span>موظف إدخال بيانات</span>
+          <span class="role-badge" style="background:#fef3c7;color:#92400e;">staff / staff123</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Particles
+const container = document.getElementById('particles');
+for (let i = 0; i < 30; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.style.cssText = `
+    left: ${Math.random() * 100}%;
+    width: ${Math.random() * 6 + 2}px;
+    height: ${Math.random() * 6 + 2}px;
+    animation-duration: ${Math.random() * 10 + 8}s;
+    animation-delay: ${Math.random() * 8}s;
+    opacity: ${Math.random() * 0.5 + 0.1};
+  `;
+  container.appendChild(p);
+}
+
+function fillLogin(user, pass) {
+  document.querySelector('[name=username]').value = user;
+  document.getElementById('passwordInput').value = pass;
+  document.querySelector('[type=submit]').click();
+}
+</script>
+</body>
+</html>

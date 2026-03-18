@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{{ 'تعديل مؤشر' if action == 'edit' else 'إضافة مؤشر' }}{% endblock %}
+{% block page_title %}{{ 'تعديل مؤشر الأداء' if action == 'edit' else 'إضافة مؤشر جديد' }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb animate-in">
+  <a href="{{ url_for('kpi_list') }}">المؤشرات</a>
+  <span class="sep">›</span>
+  <span>{{ 'تعديل' if action == 'edit' else 'إضافة جديد' }}</span>
+</div>
+
+<div style="max-width:700px;" class="animate-in">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:{{ '#fef3c7' if action == 'edit' else '#d1fae5' }};color:{{ '#92400e' if action == 'edit' else '#065f46' }};">
+        {{ '✏️' if action == 'edit' else '➕' }}
+      </div>
+      <h5>{{ 'تعديل مؤشر الأداء' if action == 'edit' else 'إضافة مؤشر أداء جديد' }}</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('kpi_edit', kpi_id=kpi.id) if action == 'edit' else url_for('kpi_add') }}">
+
+        <div class="form-group">
+          <label class="form-label">📝 اسم المؤشر <span style="color:#ef4444;">*</span></label>
+          <textarea name="name" class="form-control" rows="2" placeholder="أدخل اسم المؤشر كاملاً..." required>{{ kpi.name if kpi else '' }}</textarea>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">🏢 القسم</label>
+            <select name="department_id" class="form-select">
+              <option value="">اختر القسم...</option>
+              {% for dept in departments %}
+              <option value="{{ dept.id }}" {{ 'selected' if kpi and kpi.department_id == dept.id }}>{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">🏷️ نوع المؤشر <span style="color:#ef4444;">*</span></label>
+            <select name="kpi_type" class="form-select" required>
+              <option value="">اختر النوع...</option>
+              <option value="بنية" {{ 'selected' if kpi and kpi.kpi_type == 'بنية' }}>🏗️ بنية (Structure)</option>
+              <option value="عمليات" {{ 'selected' if kpi and kpi.kpi_type == 'عمليات' }}>⚙️ عمليات (Process)</option>
+              <option value="نتائج" {{ 'selected' if kpi and kpi.kpi_type == 'نتائج' }}>📊 نتائج (Outcome)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">🎯 القيمة المستهدفة (%)</label>
+            <input type="number" name="target_value" class="form-control" placeholder="مثال: 100"
+              min="0" max="100" step="0.1" value="{{ kpi.target_value if kpi and kpi.target_value is not none else '' }}">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">📅 تكرار القياس <span style="color:#ef4444;">*</span></label>
+            <select name="frequency" class="form-select" required>
+              <option value="">اختر التكرار...</option>
+              <option value="شهري" {{ 'selected' if kpi and kpi.frequency == 'شهري' }}>📆 شهري</option>
+              <option value="ربع سنوي" {{ 'selected' if kpi and kpi.frequency == 'ربع سنوي' }}>📅 ربع سنوي</option>
+              <option value="نصف سنوي" {{ 'selected' if kpi and kpi.frequency == 'نصف سنوي' }}>🗓️ نصف سنوي</option>
+              <option value="سنوي" {{ 'selected' if kpi and kpi.frequency == 'سنوي' }}>📋 سنوي</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">👤 المسؤول</label>
+            <input type="text" name="responsible_person" class="form-control" placeholder="اسم المسؤول..."
+              value="{{ kpi.responsible_person if kpi else '' }}">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">🔬 نوع العينة</label>
+            <select name="sample_type" class="form-select">
+              <option value="كاملة" {{ 'selected' if kpi and kpi.sample_type == 'كاملة' }}>كاملة (Full)</option>
+              <option value="عشوائية" {{ 'selected' if kpi and kpi.sample_type == 'عشوائية' }}>عشوائية (Random)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button type="submit" class="btn btn-primary btn-lg">
+            {{ '💾 حفظ التعديلات' if action == 'edit' else '➕ إضافة المؤشر' }}
+          </button>
+          <a href="{{ url_for('kpi_list') }}" class="btn btn-light btn-lg">إلغاء</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
